@@ -5,6 +5,7 @@ import re
 import random
 import gc
 import search as Search
+import datetime
 
 from collections import OrderedDict
 from moviepy.video.io.VideoFileClip import VideoFileClip
@@ -72,9 +73,40 @@ def demo_supercut(composition, padding):
         print "{1} to {2}:\t{0}".format(line, start, end)
 
 
+def create_subtitle(composition, padding):
+    outputFile = open( "supercut.srt", "w" )
+    lastSubtitleTime = 0
+    for i, c in enumerate(composition):
+        line = c['line']
+        start = c['start']
+        ms = ( lastSubtitleTime - int(lastSubtitleTime) ) * 1000
+        m, s = divmod(lastSubtitleTime, 60)
+        h, m = divmod(m, 60)
+        startTime = "%02d:%02d:%02d,%03d" % (h, m, s, ms)
+
+        end = lastSubtitleTime + c['end'] - start
+        ms = ( end - int(end) ) * 1000
+        m, s = divmod(end, 60)
+        h, m = divmod(m, 60)
+        endTime = "%02d:%02d:%02d,%03d" % (h, m, s, ms)
+
+        if i > 0 and composition[i - 1]['file'] == c['file'] and start < composition[i - 1]['end']:
+            start = start + padding
+
+        subtitle = "{0}\n{2} --> {3}\n{1}\n\n".format( i + 1, line, startTime, endTime )
+        print subtitle
+        outputFile.writelines( subtitle )
+
+        lastSubtitleTime = end
+
+    outputFile.close()
+
+
+
 def create_supercut(composition, outputfile, padding):
     print ("[+] Creating clips.")
     demo_supercut(composition, padding)
+    create_subtitle(composition, padding)
 
     # add padding when necessary
     for (clip, nextclip) in zip(composition, composition[1:]):
